@@ -21,6 +21,9 @@
 #include "device.h"
 #include "filesystem.h"
 
+#define DOS_SYS_SIZE 4625
+#define DUP_SYS_SIZE 5126
+
 /*
 http://www.atarimax.com/jindroush.atari.org/afsdos2.html
 http://www.emulatronia.com/doctec/consolas/atari8/atariref.txt
@@ -98,6 +101,10 @@ struct dos2 {
 #pragma pack (pop)
 
 void dos2_init ( struct dos2 *dos2,struct device *device );
+void dos2_init_vtoc(struct dos2 *dos);
+void dos2_update_vtoc(struct dos2 *dos2,struct device *device);
+void dos2_init_fat(struct dos2 *dos2);
+
 
 /* virtual function */
 void dos2_read_directory (struct filesystem *filesystem,struct device *device );
@@ -106,8 +113,6 @@ char dos2_get_entity(struct filesystem *filesystem,struct entity *entity,int i);
 int dos2_read_file(struct filesystem *filesystem,int i,char *data );
 int dos2_write_file(struct filesystem *filesystem,int i,char *data,int file_len,char *filename,char *ext );
 int dos2_delete_file(struct filesystem *filesystem,int i );
-
-
 
 
 

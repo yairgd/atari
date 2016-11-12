@@ -7,6 +7,7 @@ set (CMAKE_C_FLAGS_DEBUG "-Wall -g -O0 -DPIC")
 
 
 set (atari_SRC
+	dos2_format.c
 	device.c
 	atr.c
 	filesystem.c

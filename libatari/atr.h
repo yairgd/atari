@@ -39,13 +39,17 @@ struct atr {
 	struct device device;
 	struct atr_header header;
 	char *buffer;
+	int fd;
 };
 
 #pragma pack(pop)
 int atr_new_from_file(struct atr *atr,char *atrfile);
+int atr_new_empty (struct atr *atr,char *atrfile);
+
 void * atr_read_sector(struct device *device,int sector);
 void  atr_write_sector(struct device *device,int sector,char *buff);
 int atr_sector_size(struct device *device);
+int atr_flash (struct device *device);
 
 
 

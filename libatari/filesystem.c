@@ -20,6 +20,16 @@
 #include "filesystem.h"
 #include "dos2.h"
 
+extern  char dos_sys [DOS_SYS_SIZE];
+extern  char dup_sys [DUP_SYS_SIZE];
+
+
+union fs {
+	struct dos2 dos2;
+};
+
+
+extern char boot_sector[384];
 int atari_strncmp(char *d1,char *d2,int n)
 {
 	int i;
@@ -86,6 +96,31 @@ struct filesystem * filesystem_init (struct device *device )
 	dos2_init(dos2,device);
 	return &dos2->filesystem;
 		
+}
+
+
+struct filesystem *   filesystem_format (struct device *device,enum filesystem_type type,char with_dos_copy)
+{
+	union fs *fs  ; 
+	switch (type) {
+		case DOS25:
+			fs  = (union fs *) malloc (sizeof(struct dos2)); 
+			dos2_init((struct dos2*)fs,device);
+			dos2_init_fat( (struct dos2*)fs);
+			dos2_update_vtoc( (struct dos2*)fs,fs->dos2.filesystem.device );
+			device_write_sector (device,0,&boot_sector[0]);
+			device_write_sector (device,1,&boot_sector[128]);
+			device_write_sector (device,2,&boot_sector[256]);
+			filesystem_write_file( (struct filesystem * )fs,0,dos_sys,DOS_SYS_SIZE,"DOS","SYS");
+			if (with_dos_copy)
+				filesystem_write_file( (struct filesystem * )fs,1,dup_sys,DUP_SYS_SIZE,"DUP","SYS");
+
+			return &fs->dos2.filesystem;
+			break;
+		case DOS3:
+			break;
+	}
+	return 0;
 }
 
 

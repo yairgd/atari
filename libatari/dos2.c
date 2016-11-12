@@ -22,15 +22,15 @@
 #include <assert.h>
 
 #define IS_BIT_ON(buf,size)\
-	((buf[(size)/8]&(1<<((size)%8)))==1)
+	((buf[(size)/8]&(1<<((7-(size)%8))))!=0)
 #define IS_BIT_OFF(buf,size)\
-	((buf[(size)/8]&(1<<((size)%8)))==0)
-
-#define SET_BIT_OFF(buf,size)\
-	buf[(size)/8]|=(1<<((size)%8))
+	((buf[(size)/8]&(1<<((7-(size)%8))))==0)
 
 #define SET_BIT_ON(buf,size)\
-	buf[(size)/8]&=(~(1<<((size)%8)))
+	buf[(size)/8]|=(1<<((7-(size)%8)))
+
+#define SET_BIT_OFF(buf,size)\
+	buf[(size)/8]&=(~(1<<(7-((size)%8))))
 
 
 static int get_free_sector(struct dos2 *dos2) 
@@ -46,7 +46,7 @@ static int get_free_sector(struct dos2 *dos2)
 static int get_free_directory_entity(struct dos2 *dos2) 
 {
 	int i;
-	for (i=0;i<63;i++)
+	for (i=0;i<64;i++)
 	{
 		if (dos2->directory_sectors[i].flags&DOS2_FLAGS_DELETE || dos2->directory_sectors[i].flags==0)
 				return i;
@@ -63,6 +63,7 @@ void dos2_init ( struct dos2 *dos2,struct device *device )
 	dos2->filesystem.get_entity = dos2_get_entity;
 	dos2->filesystem.read_file = dos2_read_file;
 	dos2->filesystem.delete_file = dos2_delete_file;
+	dos2->filesystem.write_file = dos2_write_file;
 
 }
 
@@ -72,12 +73,12 @@ void dos2_read_directory (struct filesystem *filesystem,struct device *device )
 	int i;
 	
 	/* get the VTOC data */
-	dos2->num_free_sectors =* (unsigned short *) ( ((char*)device_read_sector (device,360))+3);
-	memcpy (dos2->free_sectors, ((char*)device_read_sector (device,360))+10,118);
+	dos2->num_free_sectors =* (unsigned short *) ( ((char*)device_read_sector (device,360-1))+3);
+	memcpy (dos2->free_sectors, ((char*)device_read_sector (device,360-1))+10,118);
 
 	/* read 8 sector of directory*/
 	for (i=0;i<=7;i++)
-		memcpy (&dos2->directory_sectors[i*8] ,  device_read_sector (device,i+361) , device_sector_size(device) );
+		memcpy (&dos2->directory_sectors[i*8] ,  device_read_sector (device,i+361-1) , device_sector_size(device) );
 
 }
 
@@ -127,8 +128,8 @@ int dos2_read_file(struct filesystem *filesystem,int i,char *data )
 	char eof = 0;
 	int tot=0;
 //	int ii=0;
-	while (!eof) {
-		struct dos2_file_sector *file_sector = device_read_sector(filesystem->device,sector+1);
+	while (!eof && sector!=0) {
+		struct dos2_file_sector *file_sector = device_read_sector(filesystem->device,sector-1);
 		sector = file_sector->forward_hi<<8 | file_sector->forward_low;
 		eof = file_sector->eof;
 		memcpy (p_data,file_sector->data,file_sector->num_of_data);
@@ -140,7 +141,34 @@ int dos2_read_file(struct filesystem *filesystem,int i,char *data )
 }
 
 
+void dos2_init_fat(struct dos2 *dos2)
+{
+	int i;
+	for (i=0;i<118;i++)
+		dos2->free_sectors[i] = 0xff;
+	for (i=360;i<=368;i++)
+		SET_BIT_OFF(dos2->free_sectors,i);
+	SET_BIT_OFF(dos2->free_sectors,0);
+	SET_BIT_OFF(dos2->free_sectors,1);
+	SET_BIT_OFF(dos2->free_sectors,2);
 
+
+	dos2->num_free_sectors = 707;
+
+	
+}
+
+void dos2_update_vtoc(struct dos2 *dos2,struct device *device)
+{
+	int i;
+	char *fat=device_read_sector(device,360-1);
+	fat[3]=dos2->num_free_sectors%256;
+	fat[4]=dos2->num_free_sectors/256;
+	for  (i=0;i<118;i++)
+		fat[i+10] = dos2->free_sectors[i];
+
+	device_write_sector(device,360-1,fat);
+}
 
 int dos2_write_file(struct filesystem *filesystem,int i,char *data,int file_len,char *filename,char *ext )
 {
@@ -156,14 +184,18 @@ int dos2_write_file(struct filesystem *filesystem,int i,char *data,int file_len,
 	int sector = get_free_sector (dos2);
 	if (sector<0)
 		return -1; /* no free sectors */
-	dos2->directory_sectors[idx].num_of_sectors = file_len%device_sector_size(filesystem->device)+1;
-	dos2->directory_sectors[idx].start_sector = sector;
-	dos2->directory_sectors[idx].flags =   DOS2_FLAGS_INUSE;
-	memcpy (&dos2->directory_sectors[idx].filename,filename,8);
+	dos2->directory_sectors[idx].num_of_sectors = file_len/device_sector_size(filesystem->device)+ ( file_len%device_sector_size(filesystem->device)!=0) ;
+	dos2->directory_sectors[idx].start_sector = sector+1;
+	dos2->directory_sectors[idx].flags =  'B';// DOS2_FLAGS_INUSE;
+
+	
+	memcpy (&dos2->directory_sectors[idx].filename,filename,strlen(filename));
+	for (i=strlen(filename);i<8;i++)
+		dos2->directory_sectors[idx].filename [i]=32;
 	memcpy (&dos2->directory_sectors[idx].ext,ext,3);
 
 	/* write the sector directory with the new dile entity */
-	device_write_sector (filesystem->device, idx%8 + 361 , (char*)&dos2->directory_sectors[idx%8]);
+	device_write_sector (filesystem->device, idx/8 + 361-1 , (char*)&dos2->directory_sectors[idx/8]);
 
 	/* set the number of the enity */
 	file_sector.file_number = idx;
@@ -172,38 +204,47 @@ int dos2_write_file(struct filesystem *filesystem,int i,char *data,int file_len,
 	idx =0;
 	while (idx<file_len) {
 		int c;
-		if (idx+125<file_len) {
+		if (file_len-idx>125) {
 			c=125;
 			file_sector.eof = 0;
 
 		}
 		else {
 			c=file_len-idx;
-			file_sector.eof = 1;			
-		
+			file_sector.eof = 1;
+				
 		}
-		int next_sector = get_free_sector (dos2);
+		SET_BIT_OFF(dos2->free_sectors,sector);
+		file_sector.num_of_data = c;
+		int next_sector = get_free_sector (dos2);		
 		if (next_sector<0)
 			return -2;
-		file_sector.num_of_data = c;
-		file_sector.forward_hi = next_sector>>8;
-		file_sector.forward_low = next_sector&0xff;
+		if (file_sector.eof)
+			next_sector=-1;
+		file_sector.forward_hi = (next_sector+1)>>8;
+		file_sector.forward_low = (next_sector+1)&0xff;
 		memcpy (&file_sector.data,&data[idx],c);
-		SET_BIT_OFF(dos2->free_sectors,sector);
-		/* write the current sector and get new sector */
+		/* the dup.sys MUST NOT have eof=1in the end of the file. 
+		 * other wise the dos menu util is not loaded after writing DOS
+		 * command in the basic prompt
+		 */
+		if (file_sector.file_number ==1 && file_sector.eof && strcmp (filename,"DUP")==0 && strcmp (ext,"SYS")==0 )
+		{
+			file_sector.eof=0;
+			
+		}
+
 		device_write_sector (filesystem->device, sector,(char*)&file_sector);
 		sector = next_sector;
 		idx+=c;
 		
 	}
 
-	// update VTOC
-	char *fat=device_read_sector(filesystem->device,360);
-	dos2->num_free_sectors-=file_len%device_sector_size(filesystem->device);
-	fat[3]=dos2->num_free_sectors%256;
-	fat[4]=dos2->num_free_sectors/256;
-	device_write_sector(filesystem->device,360,fat);
+	/* change free sctors */
+	dos2->num_free_sectors-=file_len/device_sector_size(filesystem->device)+ ( file_len%device_sector_size(filesystem->device )!=0); 
 
+	dos2_update_vtoc (dos2,filesystem->device);
+	
 	return idx;
 
 }

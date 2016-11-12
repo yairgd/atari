@@ -34,6 +34,7 @@ enum filesystem_type {
 struct filesystem {
 	struct device *device;
 	enum filesystem_type type;
+
 	void (*read_directory) 		(struct filesystem *filesystem, struct device *device );
 	char (*is_free_sector) 		(struct filesystem *filesystem,int sector);
 	int (*read_file) 		(struct filesystem *filesystem,int i,char *data);
@@ -51,6 +52,8 @@ int filesystem_delate_file(struct filesystem *filesystem,int i);
 
 
 struct filesystem * filesystem_init (struct device *device );
+struct filesystem *   filesystem_format (struct device *device,enum filesystem_type type,char with_dos_copy);
+
 
 
 

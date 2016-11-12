@@ -23,6 +23,14 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#define DOS_SYS_SIZE 4625
+#define DUP_SYS_SIZE 5126
+
+extern  char boot_sector [384];
+extern  char dos_sys [DOS_SYS_SIZE];
+extern  char dup_sys [DUP_SYS_SIZE];
+
+
 int main()
 {
 	struct atr atr;
@@ -45,8 +53,10 @@ int main()
 	int file_size = filesystem_read_file(fs,17,data);
 	printf("file size is %d\n",file_size);
 
-//	filesystem_write_file(fs,8,data,file_size,"test1","bas");
-
-
+	struct atr new_atr;
+	atr_new_empty (&new_atr,"atr5.atr");
+	struct filesystem *new_fs = filesystem_format (&new_atr.device,DOS25,1);
+	device_flash  (&new_atr.device);
+	(void)new_fs;
 	return 0;
 }

@@ -35,4 +35,9 @@ int device_sector_size(struct device *device)
 
 }
 
+int device_flash(struct device *device)
+{
+	return  device->flash(device);
+
+}
 

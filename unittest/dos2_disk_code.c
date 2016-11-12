@@ -61,40 +61,46 @@ int main()
 //	filesystem_write_file(fs,8,data,file_size,"test1","bas");
 
 	char boot_sector[3*128];
-	memcpy (&boot_sector[0], device_read_sector(fs->device,1),128);
-	memcpy (&boot_sector[128], device_read_sector(fs->device,2),128);
-	memcpy (&boot_sector[256], device_read_sector(fs->device,3),128);
+	memcpy (&boot_sector[0], device_read_sector(fs->device,0),128);
+	memcpy (&boot_sector[128], device_read_sector(fs->device,1),128);
+	memcpy (&boot_sector[256], device_read_sector(fs->device,2),128);
 
 	int i,j;
 	FILE *f = fopen ("dos2_format.h","w");
+	fprintf(f,"#ifndef DOS2_FORMAT\n");
+	fprintf(f,"#define DOS2_FORMAT\n");
+
+	fprintf(f,"#define DOS_SYS_SIZE %d\n",dos_file_size);
+	fprintf(f,"#define DUP_SYS_SIZE %d\n",dup_file_size);
 	/* print boot sector */
-	fprintf(f,"boot_sector[384]={\n");
+	fprintf(f,"char boot_sector[384]={\n");
 	for (i=0;i<24;i++) {
 		for (j=0;j<15;j++) {
 			fprintf(f,"0x%02x,",(unsigned char)boot_sector[i*16+j]);
 		}
-		fprintf(f,"0x%02x\n",(unsigned char)boot_sector[i*16+15]);
+		fprintf(f,"0x%02x,\n",(unsigned char)boot_sector[i*16+15]);
 	}
 	fprintf(f,"}\n");
 	/* printf dos.sys */
-	fprintf(f,"dos_sys[%d]={\n",dos_file_size);
+	fprintf(f,"char dos_sys[%d]={\n",dos_file_size);
 	for (i=0;i<dos_file_size/16+1;i++) {
 		for (j=0;j<15  && i*16+j<dos_file_size-1;j++) {
 			fprintf(f,"0x%02x,",(unsigned char)dos[i*16+j]);
 		}
-		fprintf(f,"0x%02x\n",(unsigned char)dos[i*16+j]);
+		fprintf(f,"0x%02x,\n",(unsigned char)dos[i*16+j]);
 	}
 	fprintf(f,"}\n");
 	/* print dup_sys */
-	fprintf(f,"dup_sys[%d]={\n",dup_file_size);
+	fprintf(f,"char dup_sys[%d]={\n",dup_file_size);
 	for (i=0;i<dup_file_size/16+1;i++) {
 		for (j=0;j<15 && i*16+j<dup_file_size-1;j++) {
 			fprintf(f,"0x%02x,",(unsigned char)dup[i*16+j]);
 		}
 
-		fprintf(f,"0x%02x\n",(unsigned char)dup[i*16+j]);
+		fprintf(f,"0x%02x,\n",(unsigned char)dup[i*16+j]);
 	}
 	fprintf(f,"}\n");
+	fprintf(f,"#endif\n");
 
 
 	fclose(f);

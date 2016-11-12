@@ -29,12 +29,15 @@ struct device  {
 	void * (*read_sector) (struct device *device,int sector);
 	void (*write_sector)(struct device *device,int sector,char *buff);
 	int (*sector_size)(struct device *device);
+	int (*flash)(struct device *device);
+	
 
 };
 #pragma pack(pop)
 void *device_read_sector(struct device *device,int sector);
 void device_write_sector(struct device *device,int sector,char *buff);
 int device_sector_size(struct device *device);
+int device_flash(struct device *device);
 
 
 
