@@ -25,6 +25,18 @@
 *
 */ 
 #pragma pack(push,1)
+
+//http://atari.kensclassics.org/dos.htm#boot3
+struct atari_xl_boot_sector {
+	char 			unused;
+	char 			sectors_to_boot;
+	unsigned short	 	boot_load_addr;
+	char			jump_6502_intruction_code; /*0x4c*/
+	unsigned short		addr_to_jump;
+
+};
+
+
 struct device  {
 	void * (*read_sector) (struct device *device,int sector);
 	void (*write_sector)(struct device *device,int sector,char *buff);
@@ -38,6 +50,7 @@ void *device_read_sector(struct device *device,int sector);
 void device_write_sector(struct device *device,int sector,char *buff);
 int device_sector_size(struct device *device);
 int device_flash(struct device *device);
+int device_create_boot_sector (struct device *device,char *buff,int len);
 
 
 

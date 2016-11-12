@@ -82,6 +82,13 @@ struct dos2_file_sector {
 	unsigned int		eof:1;
 };
 
+struct vtoc {
+	char			vtoc_num;
+	unsigned short 		num_of_avliable_sectors;
+	unsigned short 		currently_unused_sectors;
+	char 	       		unused[6]; 
+	char 			bit_map[118];
+};
 /* 
  * Sector 360 is called the Volume Table of Contents or VTOC.
  * @avalibel_sectors 		Bytes $3 and $4 contain number of sectors available

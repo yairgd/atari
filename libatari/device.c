@@ -40,4 +40,14 @@ int device_flash(struct device *device)
 	return  device->flash(device);
 
 }
+/**
+ * Created  11/12/2016
+ * @brief   this function should get empty device (atr of 1050 disk) and craete 
+ * 	    boot sector with the givven file (usually exe game)
+ * @param   
+ * @return  
+ */
+int device_create_boot_sector (struct device *device,char *buff,int len)
+{
 
+}
