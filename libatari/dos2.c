@@ -38,7 +38,7 @@ static int get_free_sector(struct dos2 *dos2)
 	int i;
 	for (i=0;i<8*118;i++)
 	{
-		if (IS_BIT_ON(dos2->free_sectors,i))
+		if (IS_BIT_ON(dos2->vtoc.bit_map,i))
 				return i;
 	}
 	return -1;
@@ -71,11 +71,10 @@ void dos2_read_directory (struct filesystem *filesystem,struct device *device )
 {
 	struct dos2 *dos2= container_of (filesystem,struct dos2,filesystem);
 	int i;
-	
-	/* get the VTOC data */
-	dos2->num_free_sectors =* (unsigned short *) ( ((char*)device_read_sector (device,360-1))+3);
-	memcpy (dos2->free_sectors, ((char*)device_read_sector (device,360-1))+10,118);
 
+	/* get VTOC */
+	memcpy (&dos2->vtoc ,  device_read_sector (device,360-1) , device_sector_size(device) );
+	
 	/* read 8 sector of directory*/
 	for (i=0;i<=7;i++)
 		memcpy (&dos2->directory_sectors[i*8] ,  device_read_sector (device,i+361-1) , device_sector_size(device) );
@@ -92,7 +91,7 @@ void dos2_read_directory (struct filesystem *filesystem,struct device *device )
 char dos2_is_free_sector(struct filesystem *filesystem,int sector)
 {
 	struct dos2 *dos2= container_of (filesystem,struct dos2,filesystem);
-	return IS_BIT_ON(dos2->free_sectors,sector);
+	return IS_BIT_ON(dos2->vtoc.bit_map,sector);
 }
 
 /**
@@ -145,29 +144,28 @@ void dos2_init_fat(struct dos2 *dos2)
 {
 	int i;
 	for (i=0;i<118;i++)
-		dos2->free_sectors[i] = 0xff;
+		dos2->vtoc.bit_map[i] = 0xff;
 	for (i=360;i<=368;i++)
-		SET_BIT_OFF(dos2->free_sectors,i);
-	SET_BIT_OFF(dos2->free_sectors,0);
-	SET_BIT_OFF(dos2->free_sectors,1);
-	SET_BIT_OFF(dos2->free_sectors,2);
-
-
-	dos2->num_free_sectors = 707;
+		SET_BIT_OFF(dos2->vtoc.bit_map,i);
+	SET_BIT_OFF(dos2->vtoc.bit_map,0);
+	SET_BIT_OFF(dos2->vtoc.bit_map,1);
+	SET_BIT_OFF(dos2->vtoc.bit_map,2);
+	dos2->vtoc.currently_unused_sectors = 707;
 
 	
 }
 
-void dos2_update_vtoc(struct dos2 *dos2,struct device *device)
-{
-	int i;
-	char *fat=device_read_sector(device,360-1);
-	fat[3]=dos2->num_free_sectors%256;
-	fat[4]=dos2->num_free_sectors/256;
-	for  (i=0;i<118;i++)
-		fat[i+10] = dos2->free_sectors[i];
 
-	device_write_sector(device,360-1,fat);
+
+/**
+ * Created  12/02/2016
+ * @brief   		creates dos2 formratted disk 
+ * @with_dos_copy	1: with dos copy, 0: without dos copy (dos command in basic mode switch to disk utils menu)
+ * @return  
+ */
+void dos2_format (struct dos2 *dos2,int with_dos_copy)
+{
+
 }
 
 int dos2_write_file(struct filesystem *filesystem,int i,char *data,int file_len,char *filename,char *ext )
@@ -214,7 +212,7 @@ int dos2_write_file(struct filesystem *filesystem,int i,char *data,int file_len,
 			file_sector.eof = 1;
 				
 		}
-		SET_BIT_OFF(dos2->free_sectors,sector);
+		SET_BIT_OFF(dos2->vtoc.bit_map,sector);
 		file_sector.num_of_data = c;
 		int next_sector = get_free_sector (dos2);		
 		if (next_sector<0)
@@ -241,10 +239,11 @@ int dos2_write_file(struct filesystem *filesystem,int i,char *data,int file_len,
 	}
 
 	/* change free sctors */
-	dos2->num_free_sectors-=file_len/device_sector_size(filesystem->device)+ ( file_len%device_sector_size(filesystem->device )!=0); 
+	dos2->vtoc.currently_unused_sectors-=file_len/device_sector_size(filesystem->device)+ ( file_len%device_sector_size(filesystem->device )!=0); 
 
-	dos2_update_vtoc (dos2,filesystem->device);
-	
+	/* update vtoc */
+	device_write_sector(filesystem->device,360-1,(char*)&dos2->vtoc);
+
 	return idx;
 
 }

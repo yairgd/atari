@@ -82,6 +82,19 @@ struct dos2_file_sector {
 	unsigned int		eof:1;
 };
 
+/*
+ * http://atari.kensclassics.org/dos.htm
+ * @vtoc_num			code indicating #of vtoc sectors code. For single density the # of vtoc sectors is (code * 2)-3. 
+ * 				Note: this is always an odd number( sectors after the first vtoc sector are always allocated in pairs).  
+ * 				For double density #vtoc_sectors = code-1.
+ * @num_of_avliable_sectors	Total number of available sectors on the disk.
+ * @currently_unused_sectors	Number of currently unused sectors.
+ * @unused			Unused
+ * @bit_map			Bitmap for sectors 0 to 943. A bit value of 0 means in use, a value of 1 means the sector is free. 
+ * 				Sector 0 doesn't exist. Sectors 1 to 3 are reserved for booting the disk, sector 360 and possibly 
+ * 				some below it are used to hold the VTOC, and sectors 361 to 368 are the directory sectors. 
+ * 				Sectors above 943 are tracked in sector 359, 358, etc.
+ */
 struct vtoc {
 	char			vtoc_num;
 	unsigned short 		num_of_avliable_sectors;
@@ -100,9 +113,7 @@ struct vtoc {
 struct dos2 {
 	struct filesystem filesystem;
 	struct dos2_directory_sector directory_sectors[64];
-	unsigned short num_free_sectors;
-	char free_sectors[118];
-
+	struct vtoc vtoc;
 };
 
 #pragma pack (pop)

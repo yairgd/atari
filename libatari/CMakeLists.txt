@@ -12,6 +12,7 @@ set (atari_SRC
 	atr.c
 	filesystem.c
 	dos2.c
+	dos3.c
 	display.c
 )	
 
@@ -24,6 +25,7 @@ set (atari_H
 	atr.h
 	filesystem.h
 	dos2.h
+	dos3.h
 	display.h
 	)
 

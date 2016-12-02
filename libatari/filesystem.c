@@ -107,7 +107,7 @@ struct filesystem *   filesystem_format (struct device *device,enum filesystem_t
 			fs  = (union fs *) malloc (sizeof(struct dos2)); 
 			dos2_init((struct dos2*)fs,device);
 			dos2_init_fat( (struct dos2*)fs);
-			dos2_update_vtoc( (struct dos2*)fs,fs->dos2.filesystem.device );
+			device_write_sector(device,360-1,(char*)&fs->dos2.vtoc );
 			device_write_sector (device,0,&boot_sector[0]);
 			device_write_sector (device,1,&boot_sector[128]);
 			device_write_sector (device,2,&boot_sector[256]);

@@ -49,5 +49,5 @@ int device_flash(struct device *device)
  */
 int device_create_boot_sector (struct device *device,char *buff,int len)
 {
-
+	return 0;
 }
