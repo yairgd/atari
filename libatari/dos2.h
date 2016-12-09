@@ -131,6 +131,8 @@ char dos2_get_entity(struct filesystem *filesystem,struct entity *entity,int i);
 int dos2_read_file(struct filesystem *filesystem,int i,char *data );
 int dos2_write_file(struct filesystem *filesystem,int i,char *data,int file_len,char *filename,char *ext );
 int dos2_delete_file(struct filesystem *filesystem,int i );
+struct filesystem *  dos2_format (struct device *device,int with_dos_copy);
+
 
 
 
