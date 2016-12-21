@@ -38,6 +38,16 @@ void dos3_init ( struct dos3 *dos3,struct device *device )
 void dos3_read_directory (struct filesystem *filesystem,struct device *device )
 {
 
+	struct dos3 *dos3 = container_of (filesystem,struct dos3,filesystem);
+	int i;
+
+	/* read 8 sector of directory*/
+	for (i=0;i<=7;i++)
+		memcpy (&dos3->directory_sectors[i*8] ,  device_read_sector (device,i+0x10-1) , device_sector_size(device) );
+
+	/* read FAT */
+	memcpy (&dos3->fat ,  device_read_sector (device,i+0x18) , device_sector_size(device) );
+
 }
 
 /**
@@ -49,7 +59,18 @@ void dos3_read_directory (struct filesystem *filesystem,struct device *device )
  */
 char dos3_is_free_sector(struct filesystem *filesystem,int sector)
 {
+	int k,j,i;
+	struct dos3 *dos3 = container_of (filesystem,struct dos3,filesystem);	
+	/* mark free sectors */
+	j=0;
+	for (i=0;i<128;i++)
+		if (dos3->fat[i]>=0xfe) 
+		{
+			for (k=25+i*8;k<25+(i+1)*8;k++,j++)
+				return sector==k;
+		}
 	return 0;
+	
 }
 
 /**
@@ -60,13 +81,59 @@ char dos3_is_free_sector(struct filesystem *filesystem,int sector)
  */
 char dos3_get_entity(struct filesystem *filesystem,struct entity *entity,int i)
 {
+	if (i<0 || i>63)
+		return -1;
+	struct dos3 *dos3= container_of (filesystem,struct dos3,filesystem);
+	memcpy (&entity->filename,&dos3->directory_sectors[i].filename,8);
+	memcpy (&entity->ext,&dos3->directory_sectors[i].ext,3);
+	entity->size = dos3->directory_sectors[i].length;
+	entity->filename[8]=0;
+	entity->ext[3]=0;
 	return 0;
+
 }
 
 
 int dos3_read_file(struct filesystem *filesystem,int i,char *data )
 {
-	return 0; /* file length*/
+#if 0
+	int file_handle,nbyte,nbyte_to_write,l;
+	short int *psect;
+	char *buf;
+	nbyte=0;
+	// create new file on linux hard disk
+	file_handle = creat (filename,0xffff);
+	if (file_handle==-1)
+		return -1;
+	
+	// locate file entity in case that filename is given instead.
+	if (entity==-1)
+	{
+		entity=GetEntityIdx(entity_filename);
+		if (entity==-1) return -1; // file not found
+	}
+	ReadDir(*drv);
+	SetEntity(entity);
+	psect=GetSectorList();
+	l=GetFileLength();
+		
+	// read file from the entity
+	while (1)
+	{
+		if (*psect==-1) break;
+	    buf=drv->ReadSector(*psect);
+		if (GetFileLength()<nbyte)
+			nbyte_to_write=nbyte-GetFileLength();
+		else
+			nbyte_to_write=128;
+		nbyte+=128;
+		write (file_handle,drv->buf,nbyte_to_write);
+		*psect++;
+	}
+ 	close (file_handle);
+	return 1;
+#endif
+	return 0;
 }
 
 
@@ -81,6 +148,6 @@ int dos3_write_file(struct filesystem *filesystem,int i,char *data,int file_len,
 int dos3_delete_file(struct filesystem *filesystem,int i )
 {
 
-//	struct dos3 *dos3= container_of (filesystem,struct dos3,filesystem);
+	//	struct dos3 *dos3= container_of (filesystem,struct dos3,filesystem);
 	return 0;
 }

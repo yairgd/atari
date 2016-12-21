@@ -19,8 +19,14 @@
 #include <string.h>
 #include "filesystem.h"
 #include "dos2.h"
+#include "dos3.h"
 
 
+static struct filesystem_desc filesystem_desc[]=  {
+	{DOS25,"DOS25"},
+	{DOS3,"DOS3"},
+	{0,0}
+};
 int atari_strncmp(char *d1,char *d2,int n)
 {
 	int i;
@@ -83,16 +89,22 @@ int filesystem_entity_filename(struct filesystem *filesystem,char *filename,char
  */
 struct filesystem * filesystem_init (struct device *device )
 {
+#if 0
 	struct dos2 *dos2  = (struct dos2 *) malloc (sizeof(struct dos2)); 
 	dos2_init(dos2,device);
 	return &dos2->filesystem;
+#else 
+	struct dos3 *dos3  = (struct dos3 *) malloc (sizeof(struct dos3)); 
+	dos3_init(dos3,device);
+	return &dos3->filesystem;
+#endif
 		
 }
 
 
 /**
  * Created  12/09/2016
- * @brief   		filesystem facrory
+ * @brief   		filesystem factory
  * @device 		device instane: device types: 1. 1050 device  2. atr file format
  * @type		filesyem type
  * @flag		private flag to factory function	

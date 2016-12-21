@@ -31,10 +31,20 @@ enum filesystem_type {
 	DOS25,
 	DOS3
 };
+
+/*
+ * represet file system type
+ * @type 	enum represent file system
+ * @name	string name of file system
+ */
+struct filesystem_desc {
+	enum filesystem_type type;
+	char *name;
+} ;
 struct filesystem {
 	struct device *device;
-	enum filesystem_type type;
-
+	//enum filesystem_type type;
+	struct filesystem_desc	*type;
 	void (*read_directory) 		(struct filesystem *filesystem, struct device *device );
 	char (*is_free_sector) 		(struct filesystem *filesystem,int sector);
 	int (*read_file) 		(struct filesystem *filesystem,int i,char *data);

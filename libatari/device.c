@@ -17,6 +17,7 @@
  */
 
 #include "device.h"
+#include <string.h>
 
 void device_write_sector(struct device *device,int sector,char *buff)
 {
@@ -44,10 +45,36 @@ int device_flash(struct device *device)
  * Created  11/12/2016
  * @brief   this function should get empty device (atr of 1050 disk) and craete 
  * 	    boot sector with the givven file (usually exe game)
+ * 	    see http://atari.kensclassics.org/dos.htm for mare details
  * @param   
  * @return  
  */
 int device_create_boot_sector (struct device *device,char *buff,int len)
 {
+
+	char sector[128];
+	int c,i,tot=0;
+	/* build first sector */
+	memset (sector,0,128);
+	sector[0] = 0;
+	sector[1] = (len/128) + ( (len%128)>0);
+	sector[2] = 1;
+	sector[3] = 0x07;
+	sector[4] = 0x11;
+	c = (len>128-16) ? 128-16 : len;
+	memcpy (&sector[16],&buff[tot], c);
+	len-=c;
+	tot+=c;
+	device_write_sector(device, 0 ,sector);
+
+	/* write other sectors */
+	i=1;
+	while (len>0) {
+		c = (len>128) ? 128 : len;
+		memcpy (sector,&buff[tot], c);
+		tot+=c;
+		len-=c;
+		device_write_sector(device, i++ ,sector);	
+	};
 	return 0;
 }
