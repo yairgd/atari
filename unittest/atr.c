@@ -180,6 +180,12 @@ void (*command[256])(struct params*, char **argv,char argc);
 void ls(struct params  *params, char **argv,char argc)
 {
 //./unittest/atr ls  /home/yair/atari/atari_old/mydisks/disk3_2016.atr
+	char *usage = "\
+atr-ls - manipulate atari file format. By yair gadelov yair.gadelov@gmail.com 	\n\n\
+Usage:	atr ls [arguments] file		shows atr/1050 disk content		\n\
+Arguments: 									\n\
+-h,--help			Display this help				\n\
+";
 	if (optind < argc) {
 		struct atr atr;
 		char *atrfile = argv[2];
