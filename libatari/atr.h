@@ -6,8 +6,8 @@
 
 #ifndef _ATR_H_
 #define _ATR_H_
+#include <stdint.h>
 
-#include "device.h"
 /*
 * http://www.atarimax.com/jindroush.atari.org/afmtatr.html
 * @wMagic		sum of 'NICKATARI' = 0x0296
@@ -20,13 +20,13 @@
 */ 
 #pragma pack(push,1)
 struct atr_header  {
-	short int	wMagic;	   	 	
-	short int   	wPars 	;  	  	
-	short int  	wSecSize ;	 	
-	char 		btParsHigh;   	 	
-	int 		dwCRC 	;		
-	int 		dwUnused ; 		
-	char  		btFlags; 	
+	uint16_t	wMagic;	   	 	
+	uint16_t   	wPars 	;  	  	
+	uint16_t  	wSecSize ;	 	
+	uint8_t 	btParsHigh;   	 	
+	uint32_t 	dwCRC 	;		
+	uint32_t	dwUnused ; 		
+	uint8_t 	btFlags; 	
 };
 
 
@@ -36,7 +36,6 @@ struct atr_header  {
  * @type	type.  ED: Enhanced-Density, 128K/disk side , SD: Single-Density, 90K/disk side
  */
 struct atr {
-	struct device device;
 	struct atr_header header;
 	char *buffer;
 	int fd;
@@ -44,12 +43,12 @@ struct atr {
 
 #pragma pack(pop)
 int atr_new_from_file(struct atr *atr,char *atrfile);
-int atr_new_empty (struct atr *atr,char *atrfile);
+int atr_new_empty (struct atr *atr,uint32_t diskSize,char *atrfile);
 
-void * atr_read_sector(struct device *device,int sector);
-void  atr_write_sector(struct device *device,int sector,char *buff);
-int atr_sector_size(struct device *device);
-int atr_flash (struct device *device);
+void * atr_read_sector(struct atr *atr,int sector);
+void  atr_write_sector(struct atr *atr,int sector,unsigned char *buff);
+int atr_sector_size(struct atr *atr);
+int atr_flash (struct atr *atr);
 
 
 

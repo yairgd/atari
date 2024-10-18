@@ -14,6 +14,7 @@ set (atari_SRC
 	dos2.c
 	dos3.c
 	display.c
+	drive1050.c	
 )	
 
 
@@ -27,6 +28,7 @@ set (atari_H
 	dos2.h
 	dos3.h
 	display.h
+	drive1050.h
 	)
 
 
@@ -35,6 +37,9 @@ add_library(atari
 	${atari_H}
 	)
 
+target_include_directories (atari PUBLIC
+	../
+)
 #INSTALL(TARGETS atari
 #        DESTINATION "lib"
 #        )

@@ -43,12 +43,7 @@ int atr_new_from_file(struct atr *atr,char *atrfile)
 	n = read (f , atr->buffer , atr_disk_size(&atr->header) - sizeof(struct atr_header));
 	if (n<0)
 		return n;
-	/* set absraction */
-	atr->device.read_sector = atr_read_sector;
-	atr->device.write_sector = atr_write_sector;
-	atr->device.sector_size = atr_sector_size;
-	atr->device.flash = atr_flash;
-	
+
 		
 	/* copy atr file name */
 	atr->fd = f;
@@ -62,11 +57,11 @@ int atr_new_from_file(struct atr *atr,char *atrfile)
  * @param   
  * @return  
  */
-int atr_new_empty (struct atr *atr,char *atrfile)
+int atr_new_empty (struct atr *atr,uint32_t diskSize, char *atrfile)
 {
 	/* buffer for disk data */
 	atr->header.wMagic      = 0x296 ; // magic by ape
-	atr->header.wPars       = 8320  ;
+	atr->header.wPars       = diskSize/16; // it was 8320  ->0x1680
 	atr->header.wSecSize    = 128   ;
 	atr->header.btParsHigh  = 0  	;
 	atr->header.dwCRC  	= 0  	;
@@ -74,21 +69,21 @@ int atr_new_empty (struct atr *atr,char *atrfile)
 	atr->header.btFlags     = 0 	;
 
 	/* open file */
-	int f  = open(atrfile,O_CREAT|O_RDWR);
+	int f  = open(atrfile,O_CREAT | O_RDWR | O_TRUNC, 0644);
 	atr->buffer = malloc( atr_disk_size(&atr->header) );
 	atr->fd = f;
 
 	/* set absraction */
-	atr->device.read_sector = atr_read_sector;
-	atr->device.write_sector = atr_write_sector;
-	atr->device.sector_size = atr_sector_size;
-	atr->device.flash = atr_flash;
+//	atr->device.read_sector = atr_read_sector;
+//	atr->device.write_sector = atr_write_sector;
+//	atr->device.sector_size = atr_sector_size;
+//	atr->device.flash = atr_flash;
 	
 	return 0;
 }
 
 
-void * atr_read_sector(struct device *device,int sector)
+void * atr_read_sector(struct atr *atr,int sector)
 {
 	/*
 	Each sector on the disk is marked with a reference number from 1 to
@@ -101,32 +96,29 @@ void * atr_read_sector(struct device *device,int sector)
      	*/
 //	if (sector<1 || sector>720)
 //		return NULL;
-	struct atr *atr = container_of (device,struct atr,device);
 	if (sector<atr_num_sectors(&atr->header))
 		return (atr->buffer + (sector)*atr->header.wSecSize);
 	return 0;
 }
 
-void  atr_write_sector(struct device *device,int sector,char *buff)
+void  atr_write_sector(struct atr *atr,int sector,unsigned char *buff)
 {
-	struct atr *atr= container_of (device,struct atr,device);
 	if (sector<atr_num_sectors(&atr->header))
 		memcpy (atr->buffer + (sector)*atr->header.wSecSize,buff,atr->header.wSecSize);
 
 }
 
-int atr_sector_size(struct device *device)
+int atr_sector_size(struct atr *atr)
 {
-	struct atr *atr= container_of (device,struct atr,device);	
 	return atr->header.wSecSize;
 	
 }
 
 
-int atr_flash (struct device *device)
+int atr_flash (struct atr * atr)
 {
-	struct atr *atr= container_of (device,struct atr,device);	
 	
+
 	 int p = write(atr->fd, &atr->header, sizeof(struct atr_header) );
 	 if (p<0)
 		 return -1;
