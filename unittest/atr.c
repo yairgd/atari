@@ -177,6 +177,21 @@ struct params {
 void (*command[256])(struct params*, char **argv,char argc);
 
 
+void hexdump(unsigned char *buf_in,int len)
+{
+	int i,j;
+	unsigned char buf[16];
+	for (i=0;i<len/16;i+=1) {
+		memcpy (buf,&buf_in[i*16],16);
+		for (j=0;j<16;j++)
+			if (buf[j]<32)
+				buf[j]=32;
+		printf("%04x     %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x  |%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c|\n",i*16,buf_in[i*16+0],buf_in[i*16+1],buf_in[i*16+2],buf_in[i*16+3],buf_in[i*16+4],buf_in[i*16+5],buf_in[i*16+6],buf_in[i*16+7],
+	     buf_in[i*16+8],buf_in[i*16+9],buf_in[i*16+10],buf_in[i*16+11],buf_in[i*16+12],buf_in[i*16+13],buf_in[i*16+14],buf_in[i*16+15],
+	     buf[0],buf[1],buf[2],buf[3],buf[4],buf[5],buf[6],buf[7],
+	     buf[8],buf[9],buf[10],buf[11],buf[12],buf[13],buf[14],buf[15]);
+	}
+}
 void ls(struct params  *params, char **argv,char argc)
 {
 //./unittest/atr ls  /home/yair/atari/atari_old/mydisks/disk3_2016.atr
@@ -203,8 +218,40 @@ Arguments: 									\n\
 
 }
 
+
 void dump(struct params  *params, char **argv,char argc)
 {
+		char *usage = "\
+atr-dump - manipulate atari file format. By yair gadelov yair.gadelov@gmail.com 	\n\n\
+Usage:	atr dump [arguments] file		dump  sectort atr/1050 disk content		\n\
+Arguments: 									\n\
+-h,--help			Display this help				\n\
+--first-sector			fitst sector to dump				\n\
+-n				number of sectors to dump			\n\
+";
+
+	int i,j,n_sector;
+	char *buf,*atrfile;
+	struct filesystem *fs;
+	struct atr atr;	
+	if (optind < argc) {
+		atrfile = argv[2];
+		if (atr_new_from_file(&atr,atrfile)<0)
+		{
+			printf("error reading ATR file named %s\n",atrfile);
+			return -1;
+		}
+
+		n_sector = 3;
+		buf =  malloc(device_sector_size (&atr.device)*n_sector);
+		fs = filesystem_init (&atr.device);
+		for (i=0;i<n_sector;i++) {
+			memcpy (&buf[i*device_sector_size (&atr.device)],  device_read_sector(fs->device,i),device_sector_size (&atr.device) );
+		
+		}
+	}
+	hexdump (buf,n_sector*device_sector_size (&atr.device));
+	free(buf);
 }
 
 
