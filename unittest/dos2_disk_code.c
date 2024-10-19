@@ -32,7 +32,7 @@ int main()
 	char dup[120*1024];
 
 
-	char *atrfile = "/home/yair/atari/atari_old/games/88_SEP.ATR";
+	char *atrfile = "/home/yair/atari/atari_old/games/89_OCT.ATR";
 	if (atr_new_from_file(&atr,atrfile)<0)
 	{
 		printf("error reading ATR file named %s\n",atrfile);

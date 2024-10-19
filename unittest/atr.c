@@ -65,7 +65,7 @@ int main1()
 	struct filesystem *fs = filesystem_init (&atr.device);
 	filesystem_read_directory (fs);
 	display_show_dir(fs);
-	return 0;
+	//return 0;
 
 	int entity = filesystem_entity_filename(fs,"KASONTWR","BAS");
 	if (entity<0)
@@ -81,7 +81,7 @@ int main1()
 
 	/* create dos2 formatted disk */
 	struct atr new_atr;
-	atr_new_empty (&new_atr,"atr5.atr");
+	atr_new_empty (&new_atr,"atr5b.atr");
 	struct filesystem *new_fs = filesystem_format (&new_atr.device,DOS25,1);
 	filesystem_write_file( new_fs,2,buff,len,"HELLO","EXE");
 
@@ -286,6 +286,9 @@ Arguments: 									\n\
 #include <getopt.h>    /* for getopt_long; POSIX standard getopt is in unistd.h */
 //https://www.gnu.org/software/libc/manual/html_node/Getopt-Long-Options.html
 int main (int argc, char **argv) {
+
+
+	main1();
 	int c;
 	int digit_optind = 0;
 	int aopt = 0, bopt = 0;

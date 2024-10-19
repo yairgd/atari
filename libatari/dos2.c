@@ -35,6 +35,7 @@
 extern  char dos_sys [DOS_SYS_SIZE];
 extern  char dup_sys [DUP_SYS_SIZE];
 extern char boot_sector[384];
+extern char boot_sector_mod[384];
 
 static int get_free_sector(struct dos2 *dos2) 
 {
@@ -175,9 +176,9 @@ struct filesystem *  dos2_format (struct device *device,int with_dos_copy)
 	dos2_init(dos2,device);
 	dos2_init_fat( dos2);
 	device_write_sector (device,360-1,(char*)&dos2->vtoc );
-	device_write_sector (device,0,&boot_sector[0]);
-	device_write_sector (device,1,&boot_sector[128]);
-	device_write_sector (device,2,&boot_sector[256]);
+	device_write_sector (device,0,&boot_sector_mod[0]);
+	device_write_sector (device,1,&boot_sector_mod[128]);
+	device_write_sector (device,2,&boot_sector_mod[256]);
 	filesystem_write_file( &dos2->filesystem,0,dos_sys,DOS_SYS_SIZE,"DOS","SYS");
 	if (with_dos_copy)
 		filesystem_write_file( &dos2->filesystem,1,dup_sys,DUP_SYS_SIZE,"DUP","SYS");
